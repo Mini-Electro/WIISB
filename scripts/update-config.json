@@ -1,0 +1,9 @@
+{
+  "githubOwner": "Mini-Electro",
+  "repo": "WIISB",
+  "releaseTags": {
+    "chat": "chat-latest",
+    "launcher": "launcher-latest",
+    "browser": "browser-latest"
+  }
+}

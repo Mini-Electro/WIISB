@@ -1,0 +1,436 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/chakra-petch/500.css";
+@import "@fontsource/chakra-petch/600.css";
+@import "@fontsource/chakra-petch/700.css";
+
+/* ------------------------------------------------------------------ *
+ * Design tokens. Everything visual reads from these CSS variables;     *
+ * themes and the user's custom colours only ever change the variables. *
+ * ------------------------------------------------------------------ */
+:root,
+:root[data-theme="midnight-purple"] {
+  --c-bg: #0c0d12;
+  --c-surface: #151722;
+  --c-elevated: #1c1f2c;
+  --c-accent: #8b5cf6;
+  --c-accent-2: #a78bfa;
+  --c-on-accent: #ffffff;
+  --c-text: #f8fafc;
+  --c-muted: #94a3b8;
+  --c-success: #34d399;
+  --c-warning: #fbbf24;
+  --c-danger: #f87171;
+  --radius: 14px;
+  --motion: 1;
+  --pad: 24px;
+  --gap: 18px;
+  color-scheme: dark;
+}
+:root[data-theme="dark-blue"] {
+  --c-bg: #0a0f1c;
+  --c-surface: #111a2e;
+  --c-elevated: #18233d;
+  --c-accent: #3b82f6;
+  --c-accent-2: #60a5fa;
+}
+:root[data-theme="oled-black"] {
+  --c-bg: #000000;
+  --c-surface: #0a0a0c;
+  --c-elevated: #131318;
+  --c-accent: #a78bfa;
+  --c-accent-2: #c4b5fd;
+  --c-on-accent: #0c0d12;
+}
+:root[data-theme="crimson"] {
+  --c-bg: #110b0e;
+  --c-surface: #1b1115;
+  --c-elevated: #261820;
+  --c-accent: #e11d48;
+  --c-accent-2: #fb7185;
+}
+:root[data-theme="emerald"] {
+  --c-bg: #07120f;
+  --c-surface: #0e1d18;
+  --c-elevated: #152a23;
+  --c-accent: #10b981;
+  --c-accent-2: #34d399;
+  --c-on-accent: #04130d;
+}
+/* Every light theme shares the same status colours and colour-scheme; each adds its own palette. */
+:root[data-theme^="light"] {
+  --c-on-accent: #ffffff;
+  --c-success: #059669;
+  --c-warning: #b45309;
+  --c-danger: #dc2626;
+  color-scheme: light;
+}
+:root[data-theme="light"] {
+  --c-bg: #f4f5f9;
+  --c-surface: #ffffff;
+  --c-elevated: #eef0f6;
+  --c-accent: #7c3aed;
+  --c-accent-2: #6d28d9;
+  --c-text: #12131a;
+  --c-muted: #5b6478;
+}
+:root[data-theme="light-sky"] {
+  --c-bg: #eef4fb;
+  --c-surface: #ffffff;
+  --c-elevated: #e3ecf7;
+  --c-accent: #2563eb;
+  --c-accent-2: #1d4ed8;
+  --c-text: #0f172a;
+  --c-muted: #55627a;
+}
+:root[data-theme="light-rose"] {
+  --c-bg: #fbf1f4;
+  --c-surface: #ffffff;
+  --c-elevated: #f5e4ea;
+  --c-accent: #e11d48;
+  --c-accent-2: #be123c;
+  --c-text: #2a0f18;
+  --c-muted: #7a5560;
+}
+:root[data-theme="light-mint"] {
+  --c-bg: #edf7f2;
+  --c-surface: #ffffff;
+  --c-elevated: #dff0e7;
+  --c-accent: #047857;
+  --c-accent-2: #065f46;
+  --c-text: #0b2018;
+  --c-muted: #4f6b5e;
+}
+:root[data-theme="light-sunset"] {
+  --c-bg: #fbf3e8;
+  --c-surface: #ffffff;
+  --c-elevated: #f4e8d6;
+  --c-accent: #c2410c;
+  --c-accent-2: #9a3412;
+  --c-text: #28160a;
+  --c-muted: #7a634f;
+}
+:root[data-theme="light-graphite"] {
+  --c-bg: #f1f2f4;
+  --c-surface: #ffffff;
+  --c-elevated: #e6e8ec;
+  --c-accent: #334155;
+  --c-accent-2: #1e293b;
+  --c-text: #111827;
+  --c-muted: #5b6270;
+}
+
+:root[data-density="compact"] {
+  --pad: 16px;
+  --gap: 12px;
+}
+:root[data-density="comfortable"] {
+  --pad: 24px;
+  --gap: 18px;
+}
+:root[data-density="spacious"] {
+  --pad: 34px;
+  --gap: 26px;
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-elevated: var(--c-elevated);
+  --color-accent: var(--c-accent);
+  --color-accent2: var(--c-accent-2);
+  --color-onaccent: var(--c-on-accent);
+  --color-fg: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-success: var(--c-success);
+  --color-warning: var(--c-warning);
+  --color-danger: var(--c-danger);
+  --color-line: color-mix(in oklab, var(--c-text) 10%, transparent);
+  --color-line-strong: color-mix(in oklab, var(--c-text) 18%, transparent);
+  --radius-card: var(--radius);
+  --radius-ctl: calc(var(--radius) * 0.65);
+  --font-sans: "Inter Variable", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Chakra Petch", "Segoe UI Variable", "Segoe UI", sans-serif;
+  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--c-accent) 55%, transparent),
+    0 10px 40px -8px color-mix(in oklab, var(--c-accent) 45%, transparent);
+}
+
+/* ------------------------------------------------------------------ */
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+}
+::selection {
+  background: color-mix(in oklab, var(--c-accent) 45%, transparent);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--c-text) 22%, transparent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--c-text) 18%, transparent);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--c-text) 30%, transparent);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent-2);
+  outline-offset: 2px;
+}
+
+/* ---- Motion: "none" switches every transition/animation off ------------- */
+:root[data-motion="none"] *,
+:root[data-motion="none"] *::before,
+:root[data-motion="none"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* ---- Reusable building blocks ------------------------------------------ */
+.panel {
+  background: var(--c-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+.panel-elevated {
+  background: var(--c-elevated);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+.glass {
+  background: color-mix(in oklab, var(--c-surface) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid var(--color-line);
+}
+.page-pad {
+  padding: var(--pad);
+}
+.display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-accent-2);
+}
+.t-transition {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter, scale, translate;
+  transition-duration: calc(180ms * var(--motion));
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.skeleton {
+  background: linear-gradient(100deg, transparent 20%, color-mix(in oklab, var(--c-text) 8%, transparent) 50%, transparent 80%),
+    color-mix(in oklab, var(--c-text) 5%, transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--c-success) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+.pulse-ring {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+/* Native <select> / range / color tuned to the theme */
+select,
+input[type="text"],
+input[type="search"],
+input[type="url"],
+textarea {
+  color: var(--c-text);
+}
+select option {
+  background: var(--c-elevated);
+  color: var(--c-text);
+}
+input[type="range"] {
+  accent-color: var(--c-accent);
+}
+input[type="color"] {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.wash:hover {
+  background: color-mix(in oklab, var(--c-text) 8%, transparent);
+}
+.wash-active {
+  background: color-mix(in oklab, var(--c-text) 12%, transparent);
+}
+
+
+/* ------------------------------------------------------------------ *
+ * Smoothness: hover grow, click ripple, animated theme changes.       *
+ * Everything scales with --motion (0 = off), so "Reduce motion" and   *
+ * the Windows setting switch it all off at once.                      *
+ * ------------------------------------------------------------------ */
+
+/* Registered colour tokens can be transitioned, so switching theme fades instead of snapping. */
+@property --c-bg { syntax: "<color>"; inherits: true; initial-value: #0c0d12; }
+@property --c-surface { syntax: "<color>"; inherits: true; initial-value: #151722; }
+@property --c-elevated { syntax: "<color>"; inherits: true; initial-value: #1c1f2c; }
+@property --c-accent { syntax: "<color>"; inherits: true; initial-value: #8b5cf6; }
+@property --c-accent-2 { syntax: "<color>"; inherits: true; initial-value: #a78bfa; }
+@property --c-text { syntax: "<color>"; inherits: true; initial-value: #f8fafc; }
+@property --c-muted { syntax: "<color>"; inherits: true; initial-value: #94a3b8; }
+@property --c-on-accent { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+:root {
+  transition:
+    --c-bg calc(380ms * var(--motion)) ease,
+    --c-surface calc(380ms * var(--motion)) ease,
+    --c-elevated calc(380ms * var(--motion)) ease,
+    --c-accent calc(380ms * var(--motion)) ease,
+    --c-accent-2 calc(380ms * var(--motion)) ease,
+    --c-text calc(380ms * var(--motion)) ease,
+    --c-muted calc(380ms * var(--motion)) ease,
+    --c-on-accent calc(380ms * var(--motion)) ease;
+}
+main {
+  scroll-behavior: smooth;
+}
+
+/* Hover grow — a little bigger on hover, a little smaller while pressed. */
+.grow,
+.grow-sm,
+.grow-lg,
+.grow-xs,
+.card-grow {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter, scale, translate;
+  transition-duration: calc(200ms * var(--motion));
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1.15);
+  will-change: scale;
+}
+.grow:hover:not(:disabled) {
+  scale: calc(1 + 0.04 * var(--motion));
+}
+.grow-sm:hover:not(:disabled) {
+  scale: calc(1 + 0.025 * var(--motion));
+}
+.grow-xs:hover {
+  scale: calc(1 + 0.012 * var(--motion));
+}
+.grow-lg:hover:not(:disabled) {
+  scale: calc(1 + 0.12 * var(--motion));
+}
+.group:hover .card-grow {
+  scale: calc(1 + 0.035 * var(--motion));
+}
+.grow:active:not(:disabled),
+.grow-sm:active:not(:disabled),
+.grow-lg:active:not(:disabled),
+.grow-xs:active {
+  scale: calc(1 - 0.03 * var(--motion));
+  transition-duration: calc(90ms * var(--motion));
+}
+.group:active .card-grow {
+  scale: calc(1 - 0.015 * var(--motion));
+}
+
+/* Click ripple: a circle that grows from the pointer and fades. Drawn in a fixed overlay clipped to the
+   clicked element, so it never changes that element's layout. */
+.ripple-host {
+  position: fixed;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 125;
+  contain: strict;
+}
+.ripple-dot {
+  position: absolute;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0);
+  animation: ripple-expand calc(650ms * var(--motion)) cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+@keyframes ripple-expand {
+  0% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  55% {
+    opacity: 0.16;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Badges that sit on top of artwork: dark glass backing and bright text, readable in every theme. */
+.on-art [data-tone] {
+  background: rgb(0 0 0 / 0.58);
+  border-color: rgb(255 255 255 / 0.2);
+  backdrop-filter: blur(6px);
+}
+.on-art [data-tone="success"] {
+  color: #6ee7b7;
+}
+.on-art [data-tone="warning"] {
+  color: #fcd34d;
+}
+.on-art [data-tone="danger"] {
+  color: #fca5a5;
+}
+.on-art [data-tone="neutral"],
+.on-art [data-tone="accent"] {
+  color: #e9d5ff;
+}

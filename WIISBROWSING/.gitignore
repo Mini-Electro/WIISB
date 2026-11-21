@@ -1,0 +1,10 @@
+bin/
+obj/
+publish/
+.vs/
+*.user
+.selftest/
+.selftest-q/
+.selftest-s/
+.testdata/
+.installtest/

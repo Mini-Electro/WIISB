@@ -1,0 +1,492 @@
+<Window x:Class="WIISBROWSING.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:m="clr-namespace:WIISBROWSING.App.Models"
+        xmlns:s="clr-namespace:WIISBROWSING.App.Services"
+        Title="WIISBROWSING" Width="1440" Height="900" MinWidth="780" MinHeight="500"
+        WindowStyle="None" ResizeMode="CanResize"
+        Background="{DynamicResource BackgroundPrimaryBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{DynamicResource UiFontFamily}" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal"
+        Icon="pack://application:,,,/Assets/wiisbrowsing.ico">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" NonClientFrameEdges="None"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="B2V"/>
+
+        <!-- Container for rows of the vertical list: wires clicks, drag-and-drop and menus. -->
+        <Style x:Key="TabRowContainer" TargetType="ListBoxItem" BasedOn="{StaticResource PlainListItem}">
+            <Setter Property="AllowDrop" Value="True"/>
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Row_PreviewMouseLeftButtonDown"/>
+            <EventSetter Event="PreviewMouseMove" Handler="Row_PreviewMouseMove"/>
+            <EventSetter Event="MouseDown" Handler="Row_MouseDown"/>
+            <EventSetter Event="MouseRightButtonUp" Handler="Row_MouseRightButtonUp"/>
+            <EventSetter Event="DragOver" Handler="Row_DragOver"/>
+            <EventSetter Event="Drop" Handler="Row_Drop"/>
+        </Style>
+
+        <Storyboard x:Key="LoadingSweep" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" From="-60" To="260" Duration="0:0:1.1"/>
+        </Storyboard>
+
+        <!-- Vertical list: a tab -->
+        <DataTemplate DataType="{x:Type m:BrowserTab}">
+            <Border x:Name="Card" Height="{DynamicResource TabItemHeight}" CornerRadius="{DynamicResource CornerSmall}" Background="Transparent" ClipToBounds="True">
+                <Grid>
+                    <Border x:Name="Selected" CornerRadius="{DynamicResource CornerSmall}" Background="{DynamicResource TabActiveBrush}" Opacity="0"/>
+                    <Border x:Name="Hover" CornerRadius="{DynamicResource CornerSmall}" Background="{DynamicResource HoverBrush}" Opacity="0"/>
+                    <Border x:Name="ClusterBar" Width="3" HorizontalAlignment="Left" Margin="0,7" CornerRadius="2" Background="{Binding ClusterBrush}" Visibility="Collapsed"/>
+                    <Border x:Name="Bar" Width="3" HorizontalAlignment="Left" Margin="0,9" CornerRadius="2" Background="{DynamicResource AccentPrimaryBrush}" Opacity="0"/>
+                    <Grid Margin="10,0,4,0" x:Name="Content">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="22"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="18" Height="18" HorizontalAlignment="Left">
+                            <TextBlock x:Name="Globe" Text="&#xE774;" FontFamily="{StaticResource IconFont}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Icon" Source="{Binding Favicon}" Width="16" Height="16" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,0">
+                            <TextBlock Text="{Binding Marker}" Visibility="{Binding HasMarker, Converter={StaticResource B2V}}" Margin="0,0,5,0" FontSize="12"/>
+                            <TextBlock x:Name="Title" Text="{Binding DisplayTitle}" Style="{StaticResource BaseText}" MaxWidth="170"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="&#xE767;" x:Name="Audio" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="{DynamicResource AccentSecondaryBrush}" VerticalAlignment="Center" Margin="4,0,2,0" Visibility="Collapsed"/>
+                        <Button Grid.Column="3" x:Name="Close" Style="{StaticResource IconButton}" Width="24" Height="24" FontSize="9" Content="&#xE8BB;" Click="CloseTab_Click" Opacity="0" ToolTip="Close tab" Tag="{Binding}"/>
+                    </Grid>
+                    <Border x:Name="Loader" Height="2" VerticalAlignment="Bottom" Margin="8,0" ClipToBounds="True" Visibility="Collapsed">
+                        <Rectangle Width="70" HorizontalAlignment="Left" Fill="{DynamicResource AccentSecondaryBrush}" RadiusX="1" RadiusY="1">
+                            <Rectangle.RenderTransform><TranslateTransform X="-60"/></Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Border>
+                    <Ellipse x:Name="RecentDot" Width="5" Height="5" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Fill="{DynamicResource AccentSecondaryBrush}" Opacity="0"/>
+                </Grid>
+                <Border.ToolTip>
+                    <ToolTip>
+                        <StackPanel MaxWidth="320">
+                            <Image Source="{Binding Preview}" MaxWidth="300" MaxHeight="190" Stretch="Uniform" Margin="0,0,0,8" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding DisplayUrl}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                            <TextBlock Text="Sleeping — click to wake" Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="11.5" Margin="0,4,0,0" Visibility="{Binding IsSleeping, Converter={StaticResource B2V}}"/>
+                        </StackPanel>
+                    </ToolTip>
+                </Border.ToolTip>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsClustered}" Value="True"><Setter TargetName="ClusterBar" Property="Visibility" Value="Visible"/><Setter TargetName="Content" Property="Margin" Value="16,0,4,0"/></DataTrigger>
+                <DataTrigger Binding="{Binding Favicon}" Value="{x:Null}"><Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/></DataTrigger>
+                <DataTrigger Binding="{Binding ShowAudioIcon}" Value="True"><Setter TargetName="Audio" Property="Visibility" Value="Visible"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsMuted}" Value="True"><Setter TargetName="Audio" Property="Text" Value="&#xE74F;"/><Setter TargetName="Audio" Property="Foreground" Value="{DynamicResource TextMutedBrush}"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsSleeping}" Value="True"><Setter TargetName="Content" Property="Opacity" Value="0.55"/></DataTrigger>
+                <DataTrigger Binding="{Binding RecentRank}" Value="1"><Setter TargetName="RecentDot" Property="Opacity" Value="0.9"/></DataTrigger>
+                <DataTrigger Binding="{Binding RecentRank}" Value="2"><Setter TargetName="RecentDot" Property="Opacity" Value="0.4"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                    <Setter TargetName="Loader" Property="Visibility" Value="Visible"/>
+                    <DataTrigger.EnterActions><BeginStoryboard x:Name="sweep" Storyboard="{StaticResource LoadingSweep}"/></DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions><StopStoryboard BeginStoryboardName="sweep"/></DataTrigger.ExitActions>
+                </DataTrigger>
+                <Trigger SourceName="Card" Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions><BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
+                        <DoubleAnimation Storyboard.TargetName="Close" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
+                    </Storyboard></BeginStoryboard></Trigger.EnterActions>
+                    <Trigger.ExitActions><BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16"/>
+                        <DoubleAnimation Storyboard.TargetName="Close" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16"/>
+                    </Storyboard></BeginStoryboard></Trigger.ExitActions>
+                </Trigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <DataTrigger.EnterActions><BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Selected" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16"/>
+                        <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16"/>
+                        <DoubleAnimation Storyboard.TargetName="Close" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16"/>
+                    </Storyboard></BeginStoryboard></DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions><BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Selected" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                        <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                    </Storyboard></BeginStoryboard></DataTrigger.ExitActions>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Vertical list: a cluster header -->
+        <DataTemplate DataType="{x:Type m:TabCluster}">
+            <Border x:Name="Head" Height="30" Margin="0,6,0,2" CornerRadius="{DynamicResource CornerSmall}" Background="Transparent">
+                <Grid Margin="6,0,6,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Chevron}" FontFamily="{StaticResource IconFont}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                    <Border Grid.Column="1" CornerRadius="9" Padding="9,2" Background="{Binding Brush}" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Emoji}" Visibility="{Binding HasEmoji, Converter={StaticResource B2V}}" Margin="0,0,4,0" FontSize="11.5"/>
+                            <TextBlock Text="{Binding Name}" Foreground="#101018" FontWeight="SemiBold" FontSize="11.5" MaxWidth="130"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Height="1" Background="{Binding Brush}" Opacity="0.35" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="{Binding Count}" Style="{StaticResource MutedText}" FontSize="11" Margin="8,0,2,0" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- Pinned tab (compact square) -->
+        <DataTemplate x:Key="PinnedTemplate" DataType="{x:Type m:BrowserTab}">
+            <Border x:Name="Card" Width="40" Height="40" Margin="2" CornerRadius="{DynamicResource CornerSmall}" Background="{DynamicResource TabBrush}" BorderThickness="1.5" BorderBrush="Transparent"
+                    MouseDown="Pinned_MouseDown" MouseRightButtonUp="Pinned_MouseRightButtonUp" Tag="{Binding}" ToolTip="{Binding DisplayTitle}" AllowDrop="True" Drop="Pinned_Drop">
+                <Grid>
+                    <TextBlock x:Name="Globe" Text="&#xE774;" FontFamily="{StaticResource IconFont}" FontSize="15" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Image x:Name="Icon" Source="{Binding Favicon}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Ellipse x:Name="Dot" Width="6" Height="6" Fill="{DynamicResource AccentSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0" Visibility="Collapsed"/>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Favicon}" Value="{x:Null}"><Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource TabActiveBrush}"/><Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsAudible}" Value="True"><Setter TargetName="Dot" Property="Visibility" Value="Visible"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsSleeping}" Value="True"><Setter TargetName="Icon" Property="Opacity" Value="0.5"/></DataTrigger>
+                <Trigger SourceName="Card" Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource SurfaceElevatedBrush}"/></Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Horizontal strip: a tab -->
+        <DataTemplate x:Key="StripTemplate" DataType="{x:Type m:BrowserTab}">
+            <Border x:Name="Card" Height="34" MinWidth="44" MaxWidth="220" Width="190" Margin="2,0" CornerRadius="{DynamicResource CornerSmall}" Background="Transparent"
+                    MouseDown="Strip_MouseDown" MouseRightButtonUp="Strip_MouseRightButtonUp" Tag="{Binding}" AllowDrop="True" Drop="Strip_Drop" ToolTip="{Binding DisplayTitle}">
+                <Grid Margin="9,0,3,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Border x:Name="ClusterLine" Height="2" VerticalAlignment="Bottom" Grid.ColumnSpan="3" Background="{Binding ClusterBrush}" Margin="-6,0" Visibility="Collapsed"/>
+                    <Grid Width="18" Height="18" HorizontalAlignment="Left">
+                        <TextBlock x:Name="Globe" Text="&#xE774;" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image x:Name="Icon" Source="{Binding Favicon}" Width="16" Height="16"/>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="{Binding DisplayTitle}" Style="{StaticResource BaseText}" VerticalAlignment="Center" Margin="4,0"/>
+                    <Button Grid.Column="2" Style="{StaticResource IconButton}" Width="22" Height="22" FontSize="9" Content="&#xE8BB;" Click="CloseTab_Click" Tag="{Binding}"/>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Favicon}" Value="{x:Null}"><Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsClustered}" Value="True"><Setter TargetName="ClusterLine" Property="Visibility" Value="Visible"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource TabActiveBrush}"/></DataTrigger>
+                <Trigger SourceName="Card" Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Sidebar: a workspace -->
+        <DataTemplate DataType="{x:Type m:Workspace}">
+            <Grid Width="56" Height="46" Background="Transparent" MouseLeftButtonUp="Workspace_Click" MouseRightButtonUp="Workspace_RightClick" Tag="{Binding}" AllowDrop="True" Drop="Workspace_Drop" Cursor="Hand">
+                <Border x:Name="Pill" Width="3" Height="22" HorizontalAlignment="Left" CornerRadius="0,3,3,0" Background="{DynamicResource AccentPrimaryBrush}" Opacity="0"/>
+                <Border x:Name="Tile" Width="36" Height="36" CornerRadius="{DynamicResource CornerMedium}" Background="{DynamicResource TabBrush}">
+                    <TextBlock Text="{Binding Icon}" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe UI Emoji, Segoe UI"/>
+                </Border>
+                <Grid.ToolTip><ToolTip Content="{Binding Name}"/></Grid.ToolTip>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter TargetName="Pill" Property="Opacity" Value="1"/>
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource TabActiveBrush}"/>
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+                    <Setter TargetName="Tile" Property="BorderThickness" Value="1.5"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Hidden}" Value="True"><Setter TargetName="Tile" Property="Opacity" Value="0.5"/></DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Sidebar: a web app shortcut -->
+        <DataTemplate DataType="{x:Type m:SidebarApp}">
+            <Grid Width="56" Height="44" Background="Transparent" MouseLeftButtonUp="SidebarApp_Click" MouseRightButtonUp="SidebarApp_RightClick" Tag="{Binding}" Cursor="Hand">
+                <Border x:Name="Tile" Width="32" Height="32" CornerRadius="{DynamicResource CornerMedium}" Background="{Binding Brush}">
+                    <Grid>
+                        <TextBlock x:Name="Letter" Text="{Binding Letter}" Foreground="White" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image x:Name="Img" Source="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+                <Grid.ToolTip><ToolTip Content="{Binding Name}"/></Grid.ToolTip>
+            </Grid>
+            <DataTemplate.Triggers>
+                <!-- With the site's own logo, show just the logo: no coloured tile behind it. The tile stays for the letter fallback. -->
+                <DataTrigger Binding="{Binding HasIcon}" Value="True">
+                    <Setter TargetName="Letter" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="Tile" Property="Background" Value="Transparent"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasIcon}" Value="False"><Setter TargetName="Img" Property="Visibility" Value="Collapsed"/></DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Downloads popover item -->
+        <DataTemplate DataType="{x:Type s:DownloadItem}">
+            <Border Padding="12,10" Margin="0,2" CornerRadius="{DynamicResource CornerSmall}" Background="{DynamicResource BackgroundSecondaryBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{Binding FileName}" Style="{StaticResource BaseText}" FontWeight="SemiBold"/>
+                        <ProgressBar x:Name="Bar" Height="3" Margin="0,6,0,4" Minimum="0" Maximum="1" Value="{Binding Fraction, Mode=OneWay}" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource BorderSubtleBrush}" BorderThickness="0"/>
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedText}" FontSize="11.5"/>
+                        <TextBlock x:Name="Risk" Text="This type of file can harm your PC. Only open it if you trust the source." Foreground="#FBBF24" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="PauseBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE769;" ToolTip="Pause" Click="DlPause_Click" Tag="{Binding}"/>
+                        <Button x:Name="ResumeBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE768;" ToolTip="Resume" Click="DlResume_Click" Tag="{Binding}" Visibility="Collapsed"/>
+                        <Button x:Name="CancelBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE711;" ToolTip="Cancel" Click="DlCancel_Click" Tag="{Binding}"/>
+                        <Button x:Name="OpenBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE8A7;" ToolTip="Open file" Click="DlOpen_Click" Tag="{Binding}" Visibility="Collapsed"/>
+                        <Button x:Name="FolderBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE838;" ToolTip="Show in folder" Click="DlFolder_Click" Tag="{Binding}" Visibility="Collapsed"/>
+                        <Button x:Name="RemoveBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE74D;" ToolTip="Remove from list" Click="DlRemove_Click" Tag="{Binding}" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsActive}" Value="False">
+                    <Setter TargetName="PauseBtn" Property="Visibility" Value="Collapsed"/><Setter TargetName="CancelBtn" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="OpenBtn" Property="Visibility" Value="Visible"/><Setter TargetName="FolderBtn" Property="Visibility" Value="Visible"/><Setter TargetName="RemoveBtn" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="Bar" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CanResume}" Value="True"><Setter TargetName="PauseBtn" Property="Visibility" Value="Collapsed"/><Setter TargetName="ResumeBtn" Property="Visibility" Value="Visible"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsRisky}" Value="True"><Setter TargetName="Risk" Property="Visibility" Value="Visible"/></DataTrigger>
+                <DataTrigger Binding="{Binding Fraction}" Value="-1"><Setter TargetName="Bar" Property="IsIndeterminate" Value="True"/></DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid x:Name="Root">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="ColSidebar" Width="56"/>
+            <ColumnDefinition x:Name="ColTabsLeft" Width="236"/>
+            <ColumnDefinition x:Name="ColSplitLeft" Width="5"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition x:Name="ColSplitPanel" Width="0"/>
+            <ColumnDefinition x:Name="ColPanel" Width="0"/>
+            <ColumnDefinition x:Name="ColSplitRight" Width="0"/>
+            <ColumnDefinition x:Name="ColTabsRight" Width="0"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ============ Opera-style application sidebar ============ -->
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}" x:Name="SidebarBorder">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <Border Height="52" Background="Transparent" MouseLeftButtonDown="DragZone_MouseLeftButtonDown" x:Name="LogoZone">
+                    <Image Source="pack://application:,,,/Assets/logo.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="WIISBROWSING"/>
+                </Border>
+                <ItemsControl Grid.Row="1" x:Name="WorkspaceList"/>
+                <Button Grid.Row="2" Style="{StaticResource IconButton}" Width="36" Height="30" Content="&#xE710;" FontSize="12" ToolTip="New workspace" Click="NewWorkspace_Click" Margin="0,2"/>
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Hidden" Margin="0,6,0,0">
+                    <StackPanel>
+                        <Border Height="1" Margin="14,2,14,8" Background="{DynamicResource BorderSubtleBrush}"/>
+                        <ItemsControl x:Name="AppList"/>
+                        <Button Style="{StaticResource IconButton}" Width="36" Height="30" Content="&#xE710;" FontSize="12" ToolTip="Add a website to the sidebar" Click="AddSidebarApp_Click" Margin="0,2"/>
+                    </StackPanel>
+                </ScrollViewer>
+                <StackPanel Grid.Row="4" Margin="0,0,0,8">
+                    <Button Style="{StaticResource IconButton}" Width="40" Content="&#xE734;" ToolTip="Bookmarks" Click="PanelBookmarks_Click" Margin="0,1"/>
+                    <Button Style="{StaticResource IconButton}" Width="40" Content="&#xE81C;" ToolTip="History (Ctrl+H)" Click="PanelHistory_Click" Margin="0,1"/>
+                    <Button Style="{StaticResource IconButton}" Width="40" Content="&#xE70B;" ToolTip="Notes" Click="PanelNotes_Click" Margin="0,1"/>
+                    <Button Style="{StaticResource IconButton}" Width="40" Content="&#xE713;" ToolTip="Settings" Click="OpenSettings_Click" Margin="0,1"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============ Vertical tab panel (left) ============ -->
+        <Border Grid.Column="1" x:Name="TabsLeftHost" Background="{DynamicResource BackgroundSecondaryBrush}" Margin="0">
+            <ContentControl x:Name="TabPanelSlotLeft"/>
+        </Border>
+        <GridSplitter Grid.Column="2" x:Name="SplitLeft" Width="5" HorizontalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" DragCompleted="TabSplitter_DragCompleted" Cursor="SizeWE"/>
+
+        <!-- ============ Main content ============ -->
+        <Grid Grid.Column="3" x:Name="MainContent">
+            <Grid.RowDefinitions>
+                <RowDefinition x:Name="RowStrip" Height="0"/>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- horizontal tab strip -->
+            <Border Grid.Row="0" x:Name="StripHost" Background="{DynamicResource SidebarBrush}" MouseLeftButtonDown="DragZone_MouseLeftButtonDown" Visibility="Collapsed">
+              <Grid x:Name="StripOverlay">
+                <Grid Margin="6,6,150,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <ListBox x:Name="StripList" Style="{StaticResource PlainList}" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ItemTemplate="{StaticResource StripTemplate}">
+                        <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+                    </ListBox>
+                    <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE710;" FontSize="12" Width="30" Height="30" ToolTip="New tab (Ctrl+T)" Click="NewTab_Click"/>
+                </Grid>
+              </Grid>
+            </Border>
+
+            <!-- toolbar -->
+            <Border Grid.Row="1" x:Name="ToolbarHost" Background="{DynamicResource ToolbarBrush}" MouseLeftButtonDown="DragZone_MouseLeftButtonDown">
+                <Grid Margin="8,0,0,0" x:Name="ToolbarGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="BackBtn" Style="{StaticResource IconButton}" Content="&#xE72B;" ToolTip="Back (Alt+Left)" Click="Back_Click"/>
+                        <Button x:Name="ForwardBtn" Style="{StaticResource IconButton}" Content="&#xE72A;" ToolTip="Forward (Alt+Right)" Click="Forward_Click"/>
+                        <Button x:Name="ReloadBtn" Style="{StaticResource IconButton}" Content="&#xE72C;" ToolTip="Reload (Ctrl+R)" Click="Reload_Click"/>
+                        <Button x:Name="HomeBtn" Style="{StaticResource IconButton}" Content="&#xE80F;" ToolTip="Home" Click="Home_Click"/>
+                    </StackPanel>
+
+                    <!-- address bar -->
+                    <Border Grid.Column="1" x:Name="AddressPill" Height="36" Margin="8,0" CornerRadius="{DynamicResource CornerLarge}" Background="{DynamicResource AddressBarBrush}" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}" VerticalAlignment="Center" MaxWidth="980">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <Button x:Name="SecurityBtn" Style="{StaticResource IconButton}" Width="32" Height="30" Margin="3,0,0,0" Content="&#xE72E;" FontSize="13" Click="Security_Click" ToolTip="Connection information"/>
+                            <Grid Grid.Column="1" Margin="2,0,4,0">
+                                <TextBox x:Name="AddressBox" Style="{StaticResource FlatTextBox}" FontSize="13.5" VerticalAlignment="Center" AcceptsReturn="False" GotKeyboardFocus="AddressBox_GotKeyboardFocus" LostKeyboardFocus="AddressBox_LostKeyboardFocus" PreviewKeyDown="AddressBox_PreviewKeyDown" TextChanged="AddressBox_TextChanged" PreviewMouseLeftButtonDown="AddressBox_PreviewMouseDown" ToolTip="Search or enter address (Ctrl+L)"/>
+                                <TextBlock x:Name="AddressHint" Text="Search or enter address" Style="{StaticResource MutedText}" IsHitTestVisible="False" VerticalAlignment="Center" FontSize="13.5" Visibility="Collapsed"/>
+                            </Grid>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,3,0">
+                                <Button x:Name="ZoomBtn" Style="{StaticResource GhostButton}" Padding="8,3" FontSize="11.5" Visibility="Collapsed" Click="ZoomReset_Click" ToolTip="Reset zoom"/>
+                                <Button x:Name="ShieldBtn" Style="{StaticResource IconButton}" Width="32" Height="30" Content="&#xEA18;" FontSize="14" Click="Shield_Click" ToolTip="Ads and trackers"/>
+                                <TextBlock x:Name="ShieldCount" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="-4,0,6,0" IsHitTestVisible="False"/>
+                                <Button x:Name="BookmarkBtn" Style="{StaticResource IconButton}" Width="32" Height="30" Content="&#xE734;" FontSize="14" Click="Bookmark_Click" ToolTip="Bookmark this page (Ctrl+D)"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <Grid>
+                            <Button x:Name="DownloadsBtn" Style="{StaticResource IconButton}" Content="&#xE896;" ToolTip="Downloads (Ctrl+J)" Click="Downloads_Click"/>
+                            <ProgressBar x:Name="DownloadsBar" Height="2" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,3" Minimum="0" Maximum="1" Visibility="Collapsed" Foreground="{DynamicResource AccentSecondaryBrush}" Background="Transparent" BorderThickness="0" IsHitTestVisible="False"/>
+                        </Grid>
+                        <Button x:Name="TabSearchBtn" Style="{StaticResource IconButton}" Content="&#xE721;" ToolTip="Search tabs (Ctrl+Shift+A)" Click="TabSearch_Click"/>
+                        <Button x:Name="PrivacyBadge" Style="{StaticResource PillButton}" Padding="10,4" Margin="4,0" Visibility="Collapsed" Content="🕶  Private" Background="#2B1B4D" Foreground="#E9D5FF" IsHitTestVisible="False"/>
+                        <Button x:Name="ProfileBtn" Style="{StaticResource IconButton}" Content="&#xE77B;" ToolTip="Profile" Click="Profile_Click"/>
+                        <Button x:Name="MenuBtn" Style="{StaticResource IconButton}" Content="&#xE712;" ToolTip="Menu" Click="Menu_Click"/>
+                    </StackPanel>
+
+                    <!-- window controls -->
+                    <StackPanel Grid.Column="3" x:Name="WindowControls" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2,0,0,0" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource WindowButton}" Content="&#xE921;" Click="Minimize_Click" ToolTip="Minimize"/>
+                        <Button x:Name="MaxBtn" Style="{StaticResource WindowButton}" Content="&#xE922;" Click="Maximize_Click" ToolTip="Maximize"/>
+                        <Button Style="{StaticResource WindowButton}" Content="&#xE8BB;" Click="Close_Click" ToolTip="Close" x:Name="CloseWinBtn"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- bookmark bar -->
+            <Border Grid.Row="2" x:Name="BookmarkBar" Background="{DynamicResource ToolbarBrush}" Height="32" Visibility="Collapsed" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"><StackPanel x:Name="BookmarkItems" Orientation="Horizontal" Margin="8,0"/></ScrollViewer>
+            </Border>
+
+            <!-- permission / external-link prompt -->
+            <Border Grid.Row="3" x:Name="PromptBar" Visibility="Collapsed" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="0,0,0,2" Padding="14,9">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" FontSize="16" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="PromptOrigin" FontWeight="SemiBold" Style="{StaticResource BaseText}"/>
+                            <TextBlock x:Name="PromptText" Style="{StaticResource MutedText}" FontSize="12"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="PromptAllow" Style="{StaticResource AccentButton}" Content="Allow while visiting" Margin="4,0" Click="PromptAllowOnce_Click"/>
+                        <Button x:Name="PromptAlways" Style="{StaticResource PillButton}" Content="Always allow" Margin="4,0" Click="PromptAlways_Click"/>
+                        <Button x:Name="PromptBlock" Style="{StaticResource PillButton}" Content="Block" Margin="4,0" Click="PromptBlock_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- find in page -->
+            <Border Grid.Row="4" x:Name="FindBar" Visibility="Collapsed" Background="{DynamicResource SurfaceElevatedBrush}" Padding="12,7" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                <StackPanel Orientation="Horizontal">
+                    <Border CornerRadius="{DynamicResource CornerSmall}" Background="{DynamicResource BackgroundPrimaryBrush}" Width="300" Height="30" Padding="10,0">
+                        <TextBox x:Name="FindBox" Style="{StaticResource FlatTextBox}" PreviewKeyDown="FindBox_PreviewKeyDown" TextChanged="FindBox_TextChanged"/>
+                    </Border>
+                    <TextBlock x:Name="FindCount" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="12,0" MinWidth="64"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE70E;" Width="30" Height="30" ToolTip="Previous (Shift+Enter)" Click="FindPrev_Click"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE70D;" Width="30" Height="30" ToolTip="Next (Enter)" Click="FindNext_Click"/>
+                    <CheckBox x:Name="FindCase" Style="{StaticResource Switch}" Content="Match case" Margin="14,0,0,0" VerticalAlignment="Center" FontSize="12" Checked="FindCase_Changed" Unchecked="FindCase_Changed"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE8BB;" Width="30" Height="30" FontSize="11" ToolTip="Close (Esc)" Click="FindClose_Click" Margin="10,0,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- web area -->
+            <Grid Grid.Row="5" x:Name="WebArea" Background="{DynamicResource BackgroundPrimaryBrush}" Margin="0,0,0,0">
+                <Grid x:Name="WebHost"/>
+                <!-- shown instead of the page when it can't be displayed (the web view is hidden then) -->
+                <Grid x:Name="StatusPanel" Visibility="Collapsed" Background="{DynamicResource BackgroundPrimaryBrush}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="520" Margin="24">
+                        <Image Source="pack://application:,,,/Assets/logo.png" Width="64" Height="64" Opacity="0.9" HorizontalAlignment="Left"/>
+                        <TextBlock x:Name="StatusTitle" FontSize="26" FontWeight="SemiBold" Margin="0,18,0,6" Style="{StaticResource BaseText}" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="StatusMessage" FontSize="14" Style="{StaticResource MutedText}" TextWrapping="Wrap" LineHeight="21"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
+                            <Button x:Name="StatusPrimary" Style="{StaticResource AccentButton}" Content="Try again" Click="StatusRetry_Click" Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource PillButton}" Content="Go back" Click="Back_Click" Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource PillButton}" Content="New tab" Click="NewTab_Click"/>
+                        </StackPanel>
+                        <Expander Header="Technical details" Margin="0,18,0,0" Foreground="{DynamicResource TextMutedBrush}"><TextBlock x:Name="StatusDetails" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/></Expander>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- ============ Side panel (web apps, history, bookmarks, notes) ============ -->
+        <GridSplitter Grid.Column="4" x:Name="SplitPanel" Width="5" HorizontalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Cursor="SizeWE" DragCompleted="PanelSplitter_DragCompleted"/>
+        <Border Grid.Column="5" x:Name="PanelHost" Background="{DynamicResource BackgroundSecondaryBrush}" ClipToBounds="True">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Grid Margin="14,0,6,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock x:Name="PanelTitle" FontWeight="SemiBold" Style="{StaticResource BaseText}" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE8A7;" Width="30" Height="30" ToolTip="Open in a tab" Click="PanelOpenInTab_Click"/>
+                    <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE72C;" Width="30" Height="30" ToolTip="Reload" Click="PanelReload_Click"/>
+                    <Button Grid.Column="3" Style="{StaticResource IconButton}" Content="&#xE8BB;" FontSize="11" Width="30" Height="30" ToolTip="Close panel" Click="PanelClose_Click"/>
+                </Grid>
+                <Grid Grid.Row="1" x:Name="PanelWebHost"/>
+            </Grid>
+        </Border>
+
+        <GridSplitter Grid.Column="6" x:Name="SplitRight" Width="5" HorizontalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Cursor="SizeWE" DragCompleted="TabSplitter_DragCompleted"/>
+        <Border Grid.Column="7" x:Name="TabsRightHost" Background="{DynamicResource BackgroundSecondaryBrush}">
+            <ContentControl x:Name="TabPanelSlotRight"/>
+        </Border>
+        <!-- ============ Floating surfaces (separate windows, so they can sit above web pages) ============ -->
+        <Popup x:Name="DownloadsPopup" PlacementTarget="{Binding ElementName=DownloadsBtn}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-300">
+            <Border Margin="14" Width="380" MaxHeight="520" CornerRadius="{DynamicResource CornerMedium}" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="12" Effect="{DynamicResource PanelShadow}">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid Margin="2,0,2,8">
+                        <TextBlock Text="Downloads" FontWeight="SemiBold" FontSize="15" Style="{StaticResource BaseText}"/>
+                        <Button HorizontalAlignment="Right" Style="{StaticResource GhostButton}" Padding="8,3" Content="Clear finished" FontSize="12" Click="DlClear_Click"/>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><ItemsControl x:Name="DownloadsList"/></ScrollViewer>
+                    <TextBlock x:Name="DownloadsEmpty" Grid.Row="1" Text="Files you download appear here." Style="{StaticResource MutedText}" HorizontalAlignment="Center" Margin="0,22" Visibility="Collapsed"/>
+                    <Button Grid.Row="2" Style="{StaticResource PillButton}" Margin="0,8,0,0" Content="Open downloads page" Click="DlOpenPage_Click"/>
+                </Grid>
+            </Border>
+        </Popup>
+
+        <Popup x:Name="SuggestPopup" PlacementTarget="{Binding ElementName=AddressPill}" Placement="Bottom" StaysOpen="True" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+            <Border Margin="12,4,12,14" CornerRadius="{DynamicResource CornerMedium}" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="6" Effect="{DynamicResource PanelShadow}" x:Name="SuggestBorder">
+                <ListBox x:Name="SuggestList" Style="{StaticResource PlainList}" MaxHeight="420" Focusable="False" PreviewMouseLeftButtonUp="SuggestList_MouseUp"/>
+            </Border>
+        </Popup>
+
+        <Popup x:Name="ShieldPopup" PlacementTarget="{Binding ElementName=ShieldBtn}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
+            <Border Margin="14" Width="320" CornerRadius="{DynamicResource CornerMedium}" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="16" Effect="{DynamicResource PanelShadow}">
+                <StackPanel x:Name="ShieldContent"/>
+            </Border>
+        </Popup>
+
+        <Popup x:Name="SecurityPopup" PlacementTarget="{Binding ElementName=SecurityBtn}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+            <Border Margin="14" Width="340" CornerRadius="{DynamicResource CornerMedium}" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="16" Effect="{DynamicResource PanelShadow}">
+                <StackPanel x:Name="SecurityContent"/>
+            </Border>
+        </Popup>
+
+        <Popup x:Name="ToastPopup" PlacementTarget="{Binding ElementName=WebArea}" Placement="Center" AllowsTransparency="True" StaysOpen="True" Focusable="False" IsHitTestVisible="False" PopupAnimation="Fade">
+            <Border Margin="16" CornerRadius="{DynamicResource CornerMedium}" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" Padding="16,10" Effect="{DynamicResource PanelShadow}" MaxWidth="560">
+                <TextBlock x:Name="ToastText" Style="{StaticResource BaseText}" TextWrapping="Wrap"/>
+            </Border>
+        </Popup>
+
+        <Popup x:Name="LinkStatusPopup" PlacementTarget="{Binding ElementName=WebArea}" Placement="Relative" AllowsTransparency="True" StaysOpen="True" Focusable="False" IsHitTestVisible="False">
+            <Border Margin="0" CornerRadius="0,8,0,0" Background="{DynamicResource SurfaceElevatedBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,1,1,0" Padding="12,5" MaxWidth="720">
+                <TextBlock x:Name="LinkStatusText" Style="{StaticResource MutedText}" FontSize="12"/>
+            </Border>
+        </Popup>
+    </Grid>
+</Window>

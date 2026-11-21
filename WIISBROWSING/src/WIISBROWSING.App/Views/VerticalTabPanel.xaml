@@ -1,0 +1,42 @@
+<UserControl x:Class="WIISBROWSING.App.Views.VerticalTabPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{DynamicResource TextPrimaryBrush}">
+    <Grid Margin="8,6,4,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="46"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- header: workspace + quick actions -->
+        <Grid x:Name="Header" Background="Transparent">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0" x:Name="HeaderTitle">
+                <TextBlock x:Name="WsIcon" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="Segoe UI Emoji, Segoe UI"/>
+                <TextBlock x:Name="WsName" FontWeight="SemiBold" FontSize="14" Style="{StaticResource BaseText}" VerticalAlignment="Center" MaxWidth="130"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" x:Name="HeaderButtons">
+                <Button x:Name="ClusterBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE8FD;" ToolTip="Tab clusters" Click="Cluster_Click"/>
+                <Button x:Name="SearchBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE721;" ToolTip="Search tabs (Ctrl+Shift+A)" Click="Search_Click"/>
+                <Button x:Name="CollapseBtn" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE76B;" ToolTip="Collapse tab panel" Click="Collapse_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <ItemsControl Grid.Row="1" x:Name="PinnedList" Margin="0,0,4,6" ItemTemplate="{DynamicResource PinnedTemplate}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+
+        <ListBox Grid.Row="2" x:Name="RowsList" Style="{StaticResource PlainList}" ItemContainerStyle="{DynamicResource TabRowContainer}" AllowDrop="True" Margin="0,0,2,0"/>
+
+        <StackPanel Grid.Row="3" Margin="0,6,4,0">
+            <Button x:Name="NewTabBtn" Style="{StaticResource PillButton}" Background="{DynamicResource TabBrush}" Height="36" HorizontalContentAlignment="Left" Click="NewTab_Click">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="13" Margin="2,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                    <TextBlock x:Name="NewTabLabel" Text="New tab" Style="{StaticResource BaseText}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

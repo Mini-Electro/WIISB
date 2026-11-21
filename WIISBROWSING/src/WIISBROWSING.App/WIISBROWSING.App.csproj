@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>WIISBROWSING</AssemblyName>
+    <RootNamespace>WIISBROWSING.App</RootNamespace>
+    <ApplicationIcon>Assets\wiisbrowsing.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.2</Version>
+    <Company>WIISB</Company>
+    <Product>WIISBROWSING</Product>
+    <Description>WIISBROWSING — a Chromium-based Windows browser</Description>
+    <Copyright>© WIISB</Copyright>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <WarningsNotAsErrors>CS8602;CS8604</WarningsNotAsErrors>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WIISBROWSING.Core\WIISBROWSING.Core.csproj" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+    <PackageReference Include="System.Speech" Version="10.0.0" />
+  </ItemGroup>
+
+  <!-- The release script passes -p:UpdateRepo=owner/repo; without it the browser never looks for updates. -->
+  <ItemGroup Condition="'$(UpdateRepo)' != ''">
+    <AssemblyMetadata Include="UpdateRepo" Value="$(UpdateRepo)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\internal\**\*" LogicalName="internal/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Resource Include="Assets\wiisbrowsing.ico" />
+    <Resource Include="Assets\logo.png" />
+  </ItemGroup>
+
+</Project>

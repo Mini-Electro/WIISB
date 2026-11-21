@@ -1,0 +1,10 @@
+node_modules/
+dist/
+target/
+.data/
+.env
+.env.production
+.env.local
+release/
+*.log
+test-results/

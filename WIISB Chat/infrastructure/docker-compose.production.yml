@@ -1,0 +1,74 @@
+# Linux host networking, dedicated server. Supply .env.production using --env-file.
+name: wiisb-chat
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wiisb
+      POSTGRES_USER: wiisb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong PostgreSQL password}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wiisb -d wiisb"]
+      interval: 10s
+      retries: 10
+  api:
+    build: { context: .., dockerfile: infrastructure/Dockerfile }
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE_ENV: production
+      HOST: 127.0.0.1
+      DATABASE_URL: ${DATABASE_URL:?Set a PostgreSQL connection URL using 127.0.0.1}
+      JWT_SECRET: ${JWT_SECRET:?Set a random 48+ character secret}
+      LIVEKIT_URL: wss://${RTC_DOMAIN:?Set RTC_DOMAIN}
+      LIVEKIT_INTERNAL_URL: http://127.0.0.1:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Set LiveKit key}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Set LiveKit secret}
+      CORS_ORIGINS: http://tauri.localhost,tauri://localhost
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      ADMIN_USER_IDS: ${ADMIN_USER_IDS:-}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-64}
+      USER_STORAGE_MB: ${USER_STORAGE_MB:-2048}
+      TRUST_PROXY: "true"
+    volumes: ["media:/data"]
+    depends_on:
+      postgres: { condition: service_healthy }
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+          use_external_ip: true
+        keys:
+          ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+        turn:
+          enabled: true
+          udp_port: 3478
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
+      RTC_DOMAIN: ${RTC_DOMAIN}
+    volumes:
+      - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+volumes:
+  postgres:
+  media:
+  caddy:

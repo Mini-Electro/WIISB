@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "WIISB Launcher",
+  "version": "1.0.2",
+  "identifier": "com.wiisb.games",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "WIISB Launcher",
+        "width": 1360,
+        "height": 840,
+        "minWidth": 980,
+        "minHeight": 620,
+        "center": true,
+        "decorations": false,
+        "shadow": true,
+        "visible": false,
+        "resizable": true,
+        "dragDropEnabled": false,
+        "backgroundColor": "#0C0D12"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: asset: http://asset.localhost; connect-src 'self' ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPLOCALDATA/artwork/**"]
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxMjk0QjQzNEM5NkZFMEEKUldRSy9wWk1RMHNwd2JiZmJid3FoRU8rUzRDZDA4djNzamlpa2w2Qm9mbnJ3bEl6UzRNTXEvOHkK",
+      "windows": { "installMode": "passive" }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "WIISB",
+    "category": "Game",
+    "shortDescription": "A local PC game library launcher",
+    "longDescription": "WIISB Launcher is a premium-feeling local launcher for games that are already installed on your PC. It tracks playtime and keeps your library in one place.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "resources": ["apps/*"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico"
+      },
+      "wix": { "language": "en-US" }
+    }
+  }
+}

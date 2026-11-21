@@ -1,0 +1,36 @@
+{
+  "name": "@wiisb/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "recover": "tsx src/recover.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.922.0",
+    "@electric-sql/pglite": "^0.3.14",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/multipart": "^9.3.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/websocket": "^11.2.0",
+    "@node-rs/argon2": "^2.0.2",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.12.8",
+    "file-type": "^21.1.1",
+    "jose": "^6.1.0",
+    "livekit-server-sdk": "^2.14.2",
+    "nodemailer": "^10.5.0",
+    "pg": "^8.16.3",
+    "sharp": "^0.35.5",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.15.6",
+    "@types/ws": "^8.18.1"
+  }
+}

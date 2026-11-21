@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="midnight-purple">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/wiisb-mark.svg" />
+    <title>WIISB Launcher</title>
+    <script>
+      // Paint the last-used background immediately (light themes would otherwise flash dark).
+      try {
+        var bg = localStorage.getItem("wiisb.boot-bg");
+        if (bg) document.documentElement.style.setProperty("--boot-bg", bg);
+      } catch (e) {}
+    </script>
+    <style>
+      /* Boot splash — shown until React mounts, so there is never a white flash. */
+      html, body { margin: 0; background: var(--boot-bg, #0C0D12); }
+      #boot {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 18px; background:
+          radial-gradient(900px 500px at 50% 35%, rgba(139,92,246,.22), transparent 70%), var(--boot-bg, #0C0D12);
+        color: #A78BFA; font-family: "Segoe UI", system-ui, sans-serif; z-index: 9999;
+        transition: opacity .35s ease;
+      }
+      #boot img { width: 84px; height: 84px; filter: drop-shadow(0 0 28px rgba(139,92,246,.65)); animation: bootpulse 1.8s ease-in-out infinite; }
+      #boot b { letter-spacing: .32em; font-size: 13px; font-weight: 600; color: #A78BFA; }
+      #boot i { width: 160px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; position: relative; }
+      #boot i::after { content: ""; position: absolute; inset: 0; width: 40%; border-radius: 3px; background: linear-gradient(90deg, #8B5CF6, #A78BFA); animation: bootbar 1.1s ease-in-out infinite; }
+      @keyframes bootpulse { 50% { transform: scale(1.06); } }
+      @keyframes bootbar { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+    </style>
+  </head>
+  <body>
+    <div id="boot"><img src="/wiisb-mark.svg" alt="" /><b>WIISB LAUNCHER</b><i></i></div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

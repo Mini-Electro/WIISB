@@ -1,0 +1,8 @@
+**/node_modules
+**/target
+**/dist
+.data
+.env
+test-results
+release
+*.log

@@ -1,0 +1,7 @@
+{
+ "$schema":"https://schema.tauri.app/config/2","productName":"WIISB Chat","version":"0.1.2","identifier":"com.wiisb.chat","mainBinaryName":"WIISB Chat",
+ "build":{"beforeDevCommand":"npm run dev","devUrl":"http://127.0.0.1:1432","beforeBuildCommand":"npm run build","frontendDist":"../dist"},
+ "app":{"windows":[{"title":"WIISB Chat","width":1420,"height":900,"minWidth":940,"minHeight":640,"center":true,"backgroundColor":"#090A10","dragDropEnabled":false}],"security":{"csp":"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; object-src 'none'; base-uri 'none'; frame-src 'none'"}},
+ "plugins":{"updater":{"pubkey":"dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxMjk0QjQzNEM5NkZFMEEKUldRSy9wWk1RMHNwd2JiZmJid3FoRU8rUzRDZDA4djNzamlpa2w2Qm9mbnJ3bEl6UzRNTXEvOHkK","windows":{"installMode":"passive"}}},
+ "bundle":{"active":true,"targets":["nsis"],"publisher":"WIISB","category":"SocialNetworking","shortDescription":"Free, self-hostable gaming communication","icon":["icons/icon.ico","icons/icon.png"],"windows":{"webviewInstallMode":{"type":"downloadBootstrapper","silent":true},"nsis":{"installMode":"currentUser","installerIcon":"icons/icon.ico"}}}
+}

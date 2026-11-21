@@ -1,0 +1,36 @@
+# Build output, installers and downloaded dependencies - never committed
+node_modules/
+dist/
+target/
+bin/
+obj/
+publish/
+release/
+releases/
+.vs/
+*.user
+
+# Installers / update artefacts (these go on the GitHub *Releases* page instead)
+*.exe
+*.sig
+*.msi
+
+# Local data, logs and test scratch space
+.data/
+.testdata/
+.installtest/
+.selftest/
+.selftest-q/
+.selftest-s/
+test-results/
+*.log
+
+# Secrets: environment files and signing keys must never be committed
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.key
+*.pem
+*.pfx
+.wiisb-keys/

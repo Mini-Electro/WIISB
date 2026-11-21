@@ -1,0 +1,30 @@
+[package]
+name = "wiisb-chat"
+version = "0.1.2"
+description = "WIISB Chat — free, self-hostable communication"
+authors = ["WIISB"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+keyring = { version = "3", features = ["windows-native"] }
+
+# Same versions Tauri's webview layer (wry) already uses; needed to switch off browser features on Windows.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+windows = "0.62"
+
+[profile.release]
+panic = "abort"
+strip = true
+lto = "thin"
+opt-level = "s"

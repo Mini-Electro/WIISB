@@ -1,0 +1,13 @@
+{$APP_DOMAIN} {
+    request_body {
+        max_size 65MB
+    }
+    reverse_proxy 127.0.0.1:4310
+    header {
+        X-Content-Type-Options nosniff
+        Strict-Transport-Security "max-age=31536000"
+    }
+}
+{$RTC_DOMAIN} {
+    reverse_proxy 127.0.0.1:7880
+}

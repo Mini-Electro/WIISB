@@ -1,0 +1,26 @@
+{
+  "name": "wiisb-chat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @wiisb/desktop",
+    "server": "npm run dev -w @wiisb/server",
+    "build": "npm run build -w @wiisb/server && npm run build -w @wiisb/desktop",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "desktop": "npm run tauri:dev -w @wiisb/desktop",
+    "package": "npm run tauri:build -w @wiisb/desktop",
+    "icons": "node scripts/icons.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^26.6.6",
+    "prettier": "^3.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^7.0.2"
+  }
+}
