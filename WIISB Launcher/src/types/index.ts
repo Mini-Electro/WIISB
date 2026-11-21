@@ -240,6 +240,18 @@ export interface OtherApp {
   icon: string | null;
   /** The launcher carries this app's setup program, so it can install it. */
   canInstall: boolean;
+  /** The version its installer registered (null for a copy that wasn't installed). */
+  installedVersion: string | null;
+}
+
+/** What GitHub says about one of the other apps. */
+export interface OtherUpdate {
+  id: "chat" | "browser";
+  installedVersion: string | null;
+  latestVersion: string | null;
+  updateAvailable: boolean;
+  notes: string | null;
+  message: string | null;
 }
 
 export interface ToastItem {

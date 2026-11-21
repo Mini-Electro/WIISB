@@ -1,7 +1,7 @@
 {
   "name": "wiisb-launcher",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "WIISB Launcher — a local PC game library launcher",
   "type": "module",
   "scripts": {

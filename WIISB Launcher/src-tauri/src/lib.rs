@@ -249,6 +249,8 @@ pub fn run() {
             commands::chat::chat_installation,
             commands::chat::launch_wiisb_chat,
             commands::others::other_apps,
+            commands::other_updates::check_other_updates,
+            commands::other_updates::update_other_app,
             commands::others::launch_other_app,
             commands::others::install_other_app,
             commands::others::locate_other_app,

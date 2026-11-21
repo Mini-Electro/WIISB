@@ -1,6 +1,6 @@
 [package]
 name = "wiisb-launcher"
-version = "1.0.2"
+version = "1.0.3"
 description = "WIISB Launcher — a local PC game library launcher"
 authors = ["WIISB"]
 edition = "2021"
@@ -30,6 +30,9 @@ sysinfo = { version = "0.40", default-features = false, features = ["system"] }
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Registry", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
 ureq = "3"
 png = "0.18"
+base64 = "0.22"
+minisign-verify = "0.3"
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "pkcs8", "std"] }
 
 [dev-dependencies]
 tempfile = "3"

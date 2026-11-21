@@ -12,24 +12,24 @@ use crate::error::{AppError, AppResult};
 use crate::games::validation::is_pe_file;
 use crate::state::AppState;
 
-struct Def {
-    id: &'static str,
-    name: &'static str,
-    tagline: &'static str,
-    exe: &'static str,
+pub(super) struct Def {
+    pub(super) id: &'static str,
+    pub(super) name: &'static str,
+    pub(super) tagline: &'static str,
+    pub(super) exe: &'static str,
     /// Name of its key under `Software\Microsoft\Windows\CurrentVersion\Uninstall`.
-    uninstall_key: &'static str,
+    pub(super) uninstall_key: &'static str,
     /// Folder inside `%LOCALAPPDATA%` / `%LOCALAPPDATA%\Programs` the installers use.
-    install_folder: &'static str,
+    pub(super) install_folder: &'static str,
     /// File name of the app's setup program inside the launcher's `apps` folder.
-    installer: &'static str,
+    pub(super) installer: &'static str,
     /// Where the project's own builds end up, relative to the folder that holds all the WIISB projects.
     project_builds: &'static [&'static [&'static str]],
     /// Where the project leaves its setup program (used when the launcher itself was not packaged with one).
     project_installers: &'static [&'static [&'static str]],
 }
 
-const APPS: [Def; 2] = [
+pub(super) const APPS: [Def; 2] = [
     Def {
         id: "chat",
         name: "WIISB Chat",
@@ -64,9 +64,9 @@ const APPS: [Def; 2] = [
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OtherApp {
-    id: &'static str,
-    name: &'static str,
-    tagline: &'static str,
+    pub(super) id: &'static str,
+    pub(super) name: &'static str,
+    pub(super) tagline: &'static str,
     installed: bool,
     path: Option<String>,
     /// `installed` | `project` | `chosen` — where the program was found.
@@ -76,13 +76,15 @@ pub struct OtherApp {
     icon: Option<String>,
     /// The launcher has this app's setup program, so "Install" will work.
     can_install: bool,
+    /// The version the app's installer registered (None for a copy that wasn't installed).
+    installed_version: Option<String>,
 }
 
-fn def(id: &str) -> AppResult<&'static Def> {
+pub(super) fn def(id: &str) -> AppResult<&'static Def> {
     APPS.iter().find(|d| d.id == id).ok_or_else(|| AppError::Invalid("Unknown WIISB app.".into()))
 }
 
-fn saved_paths(dir: &Path) -> BTreeMap<String, String> {
+pub(super) fn saved_paths(dir: &Path) -> BTreeMap<String, String> {
     std::fs::read_to_string(dir.join("other-apps.json")).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default()
 }
 
@@ -92,10 +94,10 @@ fn write_saved(dir: &Path, map: &BTreeMap<String, String>) -> AppResult<()> {
 }
 
 #[cfg(windows)]
-fn install_location(root: windows_sys::Win32::System::Registry::HKEY, key_name: &str) -> Option<String> {
+fn uninstall_value(root: windows_sys::Win32::System::Registry::HKEY, key_name: &str, value_name: &str) -> Option<String> {
     use windows_sys::Win32::System::Registry::{RegGetValueW, RRF_RT_REG_SZ};
     let key: Vec<u16> = format!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key_name}\0").encode_utf16().collect();
-    let value: Vec<u16> = "InstallLocation\0".encode_utf16().collect();
+    let value: Vec<u16> = format!("{value_name}\0").encode_utf16().collect();
     let mut buf = vec![0u16; 32768];
     let mut bytes = (buf.len() * 2) as u32;
     let status = unsafe { RegGetValueW(root, key.as_ptr(), value.as_ptr(), RRF_RT_REG_SZ, std::ptr::null_mut(), buf.as_mut_ptr().cast(), &mut bytes) };
@@ -106,6 +108,25 @@ fn install_location(root: windows_sys::Win32::System::Registry::HKEY, key_name: 
     // Some installers (WIISB Chat's) store the folder wrapped in quotes.
     let s = String::from_utf16_lossy(&buf[..end]).trim().trim_matches('"').to_string();
     (!s.is_empty()).then_some(s)
+}
+
+#[cfg(windows)]
+fn install_location(root: windows_sys::Win32::System::Registry::HKEY, key_name: &str) -> Option<String> {
+    uninstall_value(root, key_name, "InstallLocation")
+}
+
+/// The version the app's installer registered (`DisplayVersion`). Only an installed copy has one.
+pub(super) fn installed_version(d: &Def) -> Option<String> {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+        [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE].into_iter().find_map(|root| uninstall_value(root, d.uninstall_key, "DisplayVersion"))
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = d;
+        None
+    }
 }
 
 /// Every place the program may be, best first.
@@ -172,7 +193,7 @@ fn installer_failure(name: &str, code: Option<i32>) -> String {
 }
 
 /// Runs the app's own setup program silently (it is per-user, so no administrator prompt) and waits for it to finish.
-fn run_installer(name: &str, installer: &Path) -> AppResult<()> {
+pub(super) fn run_installer(name: &str, installer: &Path) -> AppResult<()> {
     let mut command = std::process::Command::new(installer);
     command.arg("/S");
     if let Some(parent) = installer.parent() {
@@ -192,11 +213,11 @@ fn run_installer(name: &str, installer: &Path) -> AppResult<()> {
 }
 
 /// Clears the "an install is running" flag however the install ends.
-struct InstallGuard;
+pub(super) struct InstallGuard;
 static INSTALLING: AtomicBool = AtomicBool::new(false);
 
 impl InstallGuard {
-    fn acquire() -> Option<InstallGuard> {
+    pub(super) fn acquire() -> Option<InstallGuard> {
         (!INSTALLING.swap(true, Ordering::SeqCst)).then_some(InstallGuard)
     }
 }
@@ -220,14 +241,14 @@ fn base64(bytes: &[u8]) -> String {
     out
 }
 
-fn running_exes() -> Vec<String> {
+pub(super) fn running_exes() -> Vec<String> {
     use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
     let Ok(mut sys) = System::new() else { return Vec::new() };
     sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing().with_exe(UpdateKind::OnlyIfNotSet));
     sys.processes().values().map(|p| p.name().to_string_lossy().to_lowercase()).collect()
 }
 
-fn describe(d: &'static Def, saved: &BTreeMap<String, String>, running: &[String], resource_dir: Option<&Path>) -> OtherApp {
+pub(super) fn describe(d: &'static Def, saved: &BTreeMap<String, String>, running: &[String], resource_dir: Option<&Path>) -> OtherApp {
     let found = find(d, saved);
     let icon = found
         .as_ref()
@@ -243,10 +264,11 @@ fn describe(d: &'static Def, saved: &BTreeMap<String, String>, running: &[String
         running: running.iter().any(|n| n.eq_ignore_ascii_case(d.exe)),
         icon,
         can_install: find_installer(d, resource_dir).is_some(),
+        installed_version: found.as_ref().filter(|(_, src)| *src == "installed").and_then(|_| installed_version(d)),
     }
 }
 
-fn resource_dir(app: &AppHandle) -> Option<PathBuf> {
+pub(super) fn resource_dir(app: &AppHandle) -> Option<PathBuf> {
     app.path().resource_dir().ok()
 }
 

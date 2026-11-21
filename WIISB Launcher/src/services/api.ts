@@ -6,6 +6,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AppInfo,
   UpdateCheck,
+  OtherUpdate,
   DeepStatus,
   DetectedItem,
   AppSettings,
@@ -52,6 +53,8 @@ export const api = {
   launchOtherApp: (id: string) => call<void>("launch_other_app", { id }),
   installOtherApp: (id: string) => call<OtherApp>("install_other_app", { id }),
   locateOtherApp: (id: string, path: string) => call<OtherApp>("locate_other_app", { id, path }),
+  checkOtherUpdates: () => call<OtherUpdate[]>("check_other_updates"),
+  updateOtherApp: (id: string) => call<OtherApp>("update_other_app", { id }),
   otherAppStartDir: (id: string) => call<string | null>("other_app_start_dir", { id }),
   locateStartDir: (slug: string) => call<string | null>("locate_start_dir", { slug }),
   checkForUpdates: () => call<UpdateCheck>("check_for_updates"),
